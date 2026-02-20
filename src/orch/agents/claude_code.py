@@ -22,6 +22,13 @@ class ClaudeCodeAgent(BaseAgent):
                 full_prompt,
                 "--output-format",
                 "json",
+                "--allowedTools",
+                "Edit",
+                "Write",
+                "Bash",
+                "Read",
+                "Glob",
+                "Grep",
                 stdout=asyncio.subprocess.PIPE,
                 stderr=asyncio.subprocess.PIPE,
             )

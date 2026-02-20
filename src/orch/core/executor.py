@@ -63,12 +63,18 @@ class Executor:
         dag = await generator.generate(goal)
         await self._monitor.log(project_id, EventType.DAG_GENERATED)
 
-        # Approval loop
-        approved = await self._approval_loop(dag, generator, goal)
-        if not approved:
-            await self._state.update_project_status(project_id, ProjectStatus.CANCELLED)
-            console.print("[yellow]Project cancelled.[/yellow]")
-            return project_id
+        # Approval loop (skip in auto mode)
+        if self._supervised:
+            approved = await self._approval_loop(dag, generator, goal)
+            if not approved:
+                await self._state.update_project_status(project_id, ProjectStatus.CANCELLED)
+                console.print("[yellow]Project cancelled.[/yellow]")
+                return project_id
+        else:
+            console.print(
+                Panel(dag.to_display_string(), title="Task Plan", border_style="cyan")
+            )
+            console.print("[dim]Auto mode: skipping approval.[/dim]\n")
 
         # Save DAG and create task records
         await self._state.save_dag_snapshot(project_id, dag.to_snapshot())
@@ -310,7 +316,7 @@ class Executor:
                     border_style="cyan",
                 )
             )
-            console.print("[a]pprove / [r]egenerate / [c]ancel: ", end="")
+            console.print("\\[a]pprove / \\[r]egenerate / \\[c]ancel: ", end="")
             choice = input().strip().lower()
 
             if choice in ("a", "approve"):
@@ -325,7 +331,7 @@ class Executor:
 
     async def _checkpoint(self) -> str:
         """Show checkpoint prompt. Returns 'continue', 'pause', or 'quit'."""
-        console.print("[dim][c]ontinue / [p]ause / [q]uit:[/dim] ", end="")
+        console.print("[dim]\\[c]ontinue / \\[p]ause / \\[q]uit:[/dim] ", end="")
         choice = input().strip().lower()
         if choice in ("p", "pause"):
             return "pause"

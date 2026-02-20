@@ -71,7 +71,9 @@ class TestExecutor:
         assert all(t["status"] == "completed" for t in tasks)
 
     async def test_run_cancel(self, setup) -> None:
-        state, agent, executor = setup
+        state, agent, _ = setup
+
+        executor = Executor(state, agent, Monitor(state), supervised=True)
 
         agent.add_result(AgentResult(success=True, output=SIMPLE_DAG_RESPONSE))
 
